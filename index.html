@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>School A4 Poster Studio</title>
+<style>
+:root{--navy:#18324b;--blue:#2563eb;--bg:#f3f6fa;--line:#d8e0e9}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#172536}
+header{background:var(--navy);color:white;padding:18px 22px}header h1{margin:0;font-size:22px}header p{margin:6px 0 0;color:#dbe7f2;font-size:13px}
+main{max-width:1200px;margin:18px auto;padding:0 14px;display:grid;grid-template-columns:310px 1fr;gap:16px}
+.panel,.workspace{background:white;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 3px 12px #18324b0b}
+h2{font-size:16px;margin:0 0 12px}.group{padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid #edf0f4}
+label{display:block;font-size:12px;font-weight:700;margin:9px 0 5px}
+input,select,textarea{width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px}
+input[type=color]{height:38px;padding:3px}input[type=range]{padding:0}
+button{border:0;border-radius:8px;padding:10px 12px;background:var(--blue);color:white;font-weight:700;cursor:pointer;margin:4px 3px 0 0}
+button.secondary{background:#e8eef6;color:#18324b}button.danger{background:#b42318}
+button:focus,input:focus,select:focus{outline:2px solid #93c5fd;outline-offset:1px}
+.workspace{min-width:0}.toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px}
+.canvas-wrap{background:#e9eef4;border-radius:10px;padding:14px;display:flex;justify-content:center;overflow:auto}
+canvas{background:white;width:min(100%,590px);height:auto;box-shadow:0 4px 18px #10203022;touch-action:manipulation}
+.hint{font-size:12px;color:#5b6878;line-height:1.5}.status{font-size:12px;color:#12623c;margin-top:8px;min-height:16px}
+footer{text-align:center;padding:20px;color:#667085;font-size:12px}
+@media(max-width:800px){main{grid-template-columns:1fr}.workspace{order:-1}.canvas-wrap{padding:7px}header h1{font-size:19px}}
+</style>
+</head>
+<body>
+<header><h1>SCHOOL DIGITAL POSTER STUDIO</h1><p>Create an A4 poster • Use a template or start with a blank page • Download as PNG</p></header>
+<main>
+<section class="panel">
+ <div class="group"><h2>1. Start your poster</h2>
+  <label for="template">Choose a starting design</label>
+  <select id="template"><option value="blank">Blank A4 page</option><option value="event">School event</option><option value="environment">Environment awareness</option><option value="health">Health & wellness</option><option value="science">Science exhibition</option></select>
+  <button id="applyTemplate">Apply design</button>
+  <p class="hint">Templates are editable starting points. You can change every text, colour and image.</p>
+ </div>
+ <div class="group"><h2>2. Add text</h2>
+  <label for="text">Text</label><textarea id="text" rows="2" placeholder="Type your poster text here"></textarea>
+  <label for="fontSize">Font size</label><input id="fontSize" type="range" min="24" max="180" value="64">
+  <label for="textColor">Text colour</label><input id="textColor" type="color" value="#18324b">
+  <button id="addText">Add text to poster</button>
+  <button class="secondary" id="updateText">Update selected text</button>
+  <p class="hint">Tap/click an item on the poster to select it. Drag it to move. Text can be edited or deleted below.</p>
+ </div>
+ <div class="group"><h2>3. Add a photo</h2>
+  <label for="photo">Choose image from your device</label><input id="photo" type="file" accept="image/*">
+  <button class="secondary" id="deleteSelected">Delete selected item</button>
+ </div>
+ <div class="group"><h2>4. Page design</h2>
+  <label for="bg">Background colour</label><input id="bg" type="color" value="#ffffff">
+  <button class="secondary" id="applyBg">Apply background</button>
+  <label for="student">Student name / class (optional)</label><input id="student" placeholder="Name and class">
+  <button class="secondary" id="addStudent">Add name to poster</button>
+ </div>
+ <div><h2>5. Save your work</h2>
+  <button id="download">Download A4 poster (PNG)</button>
+  <button class="secondary" id="clear">Clear poster</button>
+  <p class="hint">After downloading, upload the PNG to the school's submission form or Google Classroom.</p>
+  <div class="status" id="status" role="status"></div>
+ </div>
+</section>
+<section class="workspace">
+ <div class="toolbar"><strong>A4 Portrait · 210 × 297 mm</strong><span class="hint">Print-quality canvas: 2480 × 3508 px</span></div>
+ <div class="canvas-wrap"><canvas id="poster" width="1240" height="1754" aria-label="Poster editing canvas"></canvas></div>
+ <p class="hint">How to use: choose Blank or a template → add/edit text → upload a photo → download PNG. On a phone, tap an item and drag it to reposition.</p>
+</section>
+</main>
+<footer>School Digital Poster Studio · No AI tools · Works in a modern web browser</footer>
+<script>
+const c=document.getElementById('poster'),ctx=c.getContext('2d');
+let items=[],selected=-1,bg='#ffffff',drag=null;
+const scale=2;
+function addText(txt,x,y,size=64,color='#18324b',weight='bold'){items.push({type:'text',text:txt,x,y,size:size/2,color,weight});selected=items.length-1;draw()}
+function addImage(img){let maxW=820,maxH=700,s=Math.min(maxW/img.width,maxH/img.height,1);items.push({type:'image',img,x:210,y:500,w:img.width*s/2,h:img.height*s/2});selected=items.length-1;draw()}
+function draw(){
+ ctx.fillStyle=bg;ctx.fillRect(0,0,c.width,c.height);
+ items.forEach((it,i)=>{
+  if(it.type==='text'){ctx.font=`${it.weight} ${it.size}px Arial`;ctx.fillStyle=it.color;ctx.textBaseline='top';wrapText(it.text,it.x,it.y,1000,it.size*1.22)}
+  else {ctx.drawImage(it.img,it.x,it.y,it.w,it.h)}
+  if(i===selected){ctx.save();ctx.strokeStyle='#2563eb';ctx.lineWidth=3;ctx.setLineDash([10,7]);let b=bounds(it);ctx.strokeRect(b.x-7,b.y-7,b.w+14,b.h+14);ctx.restore()}
+ });
+}
+function wrapText(text,x,y,maxWidth,lineH){let lines=String(text).split('\\n');lines.forEach(line=>{let words=line.split(' '),row='';for(let word of words){let test=row?row+' '+word:word;if(ctx.measureText(test).width>maxWidth&&row){ctx.fillText(row,x,y);y+=lineH;row=word}else row=test}ctx.fillText(row,x,y);y+=lineH})}
+function bounds(it){if(it.type==='image')return{x:it.x,y:it.y,w:it.w,h:it.h};ctx.font=`${it.weight} ${it.size}px Arial`;let lines=it.text.split('\\n');return{x:it.x,y:it.y,w:Math.max(...lines.map(t=>ctx.measureText(t).width),80),h:lines.length*it.size*1.22}}
+function point(e){let r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}}
+function hit(p,it){let b=bounds(it);return p.x>=b.x-12&&p.x<=b.x+b.w+12&&p.y>=b.y-12&&p.y<=b.y+b.h+12}
+c.addEventListener('pointerdown',e=>{let p=point(e);selected=-1;for(let i=items.length-1;i>=0;i--)if(hit(p,items[i])){selected=i;drag={x:p.x-items[i].x,y:p.y-items[i].y};
+ if(items[i].type==='text'){document.getElementById('text').value=items[i].text;document.getElementById('textColor').value=items[i].color;document.getElementById('fontSize').value=Math.min(180,Math.max(24,items[i].size*2))}
+ break}c.setPointerCapture(e.pointerId);draw()});
+c.addEventListener('pointermove',e=>{if(!drag||selected<0)return;let p=point(e),it=items[selected];it.x=Math.max(0,Math.min(c.width-20,p.x-drag.x));it.y=Math.max(0,Math.min(c.height-20,p.y-drag.y));draw()});
+c.addEventListener('pointerup',()=>drag=null);c.addEventListener('pointercancel',()=>drag=null);
+document.getElementById('addText').onclick=()=>{let t=document.getElementById('text').value.trim();if(t)addText(t,100,180,Number(document.getElementById('fontSize').value),document.getElementById('textColor').value)};
+document.getElementById('updateText').onclick=()=>{if(selected>=0&&items[selected].type==='text'){let it=items[selected],t=document.getElementById('text').value.trim();if(t){it.text=t;it.color=document.getElementById('textColor').value;it.size=Number(document.getElementById('fontSize').value)/2;draw()}}};
+document.getElementById('photo').onchange=e=>{let f=e.target.files[0];if(!f)return;let img=new Image();img.onload=()=>addImage(img);img.src=URL.createObjectURL(f)};
+document.getElementById('deleteSelected').onclick=()=>{if(selected>=0){items.splice(selected,1);selected=-1;draw()}};
+document.getElementById('applyBg').onclick=()=>{bg=document.getElementById('bg').value;draw()};
+document.getElementById('addStudent').onclick=()=>{let t=document.getElementById('student').value.trim();if(t)addText(t,100,1600,36,'#526273','normal')};
+document.getElementById('clear').onclick=()=>{if(confirm('Clear the whole poster?')){items=[];bg='#ffffff';selected=-1;draw()}};
+document.getElementById('download').onclick=()=>{const out=document.createElement('canvas');out.width=2480;out.height=3508;out.getContext('2d').drawImage(c,0,0,out.width,out.height);let a=document.createElement('a');a.download='school-poster-A4.png';a.href=out.toDataURL('image/png');a.click();document.getElementById('status').textContent='Poster downloaded. Submit the PNG using your school’s submission link.'};
+function template(type){
+ items=[];bg='#ffffff';selected=-1;
+ const add=(t,x,y,s,col,w='bold')=>items.push({type:'text',text:t,x,y,size:s/2,color:col,weight:w});
+ if(type==='event'){bg='#fff4df';add('SCHOOL EVENT',95,130,150,'#9a3412');add('YOUR EVENT TITLE',95,390,110,'#18324b');add('Date • Time • Venue',95,560,64,'#334155','normal');add('Join us!',95,1430,90,'#9a3412')}
+ if(type==='environment'){bg='#eaf7ed';add('SAVE OUR PLANET',90,140,145,'#166534');add('REDUCE • REUSE • RECYCLE',90,420,75,'#14532d');add('Small actions make a big difference',90,1450,56,'#166534','normal')}
+ if(type==='health'){bg='#eef6ff';add('HEALTHY MIND',90,140,140,'#1d4ed8');add('HEALTHY BODY',90,330,140,'#1d4ed8');add('Eat well • Move more • Sleep well',90,620,65,'#18324b','normal');add('Take care of yourself!',90,1450,72,'#1d4ed8')}
+ if(type==='science'){bg='#f1edff';add('SCIENCE EXHIBITION',90,140,130,'#5b21b6');add('DISCOVER • EXPLORE • CREATE',90,430,65,'#312e81');add('Project title:',90,700,70,'#18324b','normal');add('Date • Time • Venue',90,1450,60,'#5b21b6','normal')}
+ draw();
+}
+document.getElementById('applyTemplate').onclick=()=>template(document.getElementById('template').value);
+draw();
+</script>
+</body></html>
